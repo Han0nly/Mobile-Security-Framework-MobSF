@@ -46,31 +46,36 @@ def code_analysis(app_dir, typ, manifest_file):
         skp = settings.SKIP_CLASS_PATH
         logger.info('Code Analysis Started on - %s',
                     filename_from_path(src))
+
         # Code and API Analysis
-        code_findings = scan(
-            code_rules.as_posix(),
-            {'.java', '.kt'},
-            [src],
-            skp)
+        code_findings = {}
+        # code_findings = scan(
+        #     code_rules.as_posix(),  # rule
+        #     {'.java', '.kt'},  # extension
+        #     [src],  # paths
+        #     skp)  # ignore paths
         api_findings = scan(
             api_rules.as_posix(),
             {'.java', '.kt'},
             [src],
             skp)
+
         # NIAP Scan
-        logger.info('Running NIAP Analyzer')
-        niap_findings = niap_scan(
-            niap_rules.as_posix(),
-            {'.java', '.xml'},
-            [src],
-            manifest_file,
-            None)
+        logger.info('NIAP Analyzer is skipped')
+        niap_findings = {}
+        # niap_findings = niap_scan(
+        #     niap_rules.as_posix(),  # rule
+        #     {'.java', '.xml'},  # extension
+        #     [src],  # paths
+        #     manifest_file,  # apath
+        #     None)  # ignore_paths
+
         # Extract URLs and Emails
         for pfile in Path(src).rglob('*'):
             if (
-                (pfile.suffix in ('.java', '.kt')
-                    and any(skip_path in pfile.as_posix()
-                            for skip_path in skp) is False)
+                    (pfile.suffix in ('.java', '.kt')
+                     and any(skip_path in pfile.as_posix()
+                             for skip_path in skp) is False)
             ):
                 content = None
                 try:

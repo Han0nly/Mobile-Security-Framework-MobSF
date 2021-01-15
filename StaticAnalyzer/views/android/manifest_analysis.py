@@ -25,7 +25,6 @@ from .dvm_permissions import DVM_PERMISSIONS
 
 logger = logging.getLogger(__name__)
 
-
 ANDROID_4_2_LEVEL = 17
 ANDROID_5_0_LEVEL = 21
 
@@ -246,7 +245,7 @@ def get_browsable_activities(node):
 
 
 def manifest_analysis(mfxml, man_data_dic, src_type, app_dir):
-    """Analyse manifest file."""
+    """Analyse manifest file. ret_list.append(problem_id,(title format string),(problem format string))"""
     # pylint: disable=C0301
     try:
         logger.info('Manifest Analysis Started')
@@ -255,6 +254,9 @@ def manifest_analysis(mfxml, man_data_dic, src_type, app_dir):
         datas = mfxml.getElementsByTagName('data')
         intents = mfxml.getElementsByTagName('intent-filter')
         actions = mfxml.getElementsByTagName('action')
+        services = mfxml.getElementsByTagName('service')
+        metadatas = mfxml.getElementsByTagName('meta-data')
+        usesdks = mfxml.getElementsByTagName('uses-sdk')
         granturipermissions = mfxml.getElementsByTagName(
             'grant-uri-permission')
         permissions = mfxml.getElementsByTagName('permission')
@@ -367,7 +369,7 @@ def manifest_analysis(mfxml, man_data_dic, src_type, app_dir):
                         affected_sdk and
                         itemname in ['Activity', 'Activity-Alias'] and
                         (node.getAttribute('android:launchMode') == 'singleInstance'
-                            or node.getAttribute('android:launchMode') == 'singleTask')):
+                         or node.getAttribute('android:launchMode') == 'singleTask')):
                     item = node.getAttribute('android:name')
                     ret_list.append(('a_launchmode', (item,), ()))
                 # Exported Check
@@ -410,14 +412,14 @@ def manifest_analysis(mfxml, man_data_dic, src_type, app_dir):
                                         if itemname in ['Activity', 'Activity-Alias']:
                                             exported.append(item)
                                         exp_count[cnt_id] = exp_count[
-                                            cnt_id] + 1
+                                                                cnt_id] + 1
                                     elif protlevel == 'dangerous':
                                         ret_list.append(
                                             ('a_prot_danger', (itemname, item, perm + prot), (an_or_a, itemname)))
                                         if itemname in ['Activity', 'Activity-Alias']:
                                             exported.append(item)
                                         exp_count[cnt_id] = exp_count[
-                                            cnt_id] + 1
+                                                                cnt_id] + 1
                                     elif protlevel == 'signature':
                                         ret_list.append(
                                             ('a_prot_sign', (itemname, item, perm + prot), (an_or_a, itemname)))
@@ -460,31 +462,35 @@ def manifest_analysis(mfxml, man_data_dic, src_type, app_dir):
                                     if prot_level_exist:
                                         if protlevel == 'normal':
                                             ret_list.append(
-                                                ('a_prot_normal_appl', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                ('a_prot_normal_appl', (itemname, item, perm + prot),
+                                                 (an_or_a, itemname)))
                                             if itemname in ['Activity', 'Activity-Alias']:
                                                 exported.append(item)
                                             exp_count[cnt_id] = exp_count[
-                                                cnt_id] + 1
+                                                                    cnt_id] + 1
                                         elif protlevel == 'dangerous':
                                             ret_list.append(
-                                                ('a_prot_danger_appl', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                ('a_prot_danger_appl', (itemname, item, perm + prot),
+                                                 (an_or_a, itemname)))
                                             if itemname in ['Activity', 'Activity-Alias']:
                                                 exported.append(item)
                                             exp_count[cnt_id] = exp_count[
-                                                cnt_id] + 1
+                                                                    cnt_id] + 1
                                         elif protlevel == 'signature':
                                             ret_list.append(
-                                                ('a_prot_sign_appl', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                (
+                                                'a_prot_sign_appl', (itemname, item, perm + prot), (an_or_a, itemname)))
                                         elif protlevel == 'signatureOrSystem':
                                             ret_list.append(
-                                                ('a_prot_sign_sys_appl', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                ('a_prot_sign_sys_appl', (itemname, item, perm + prot),
+                                                 (an_or_a, itemname)))
                                     else:
                                         ret_list.append(
                                             ('a_prot_unknown_appl', (itemname, item, perm), (an_or_a, itemname)))
                                         if itemname in ['Activity', 'Activity-Alias']:
                                             exported.append(item)
                                         exp_count[cnt_id] = exp_count[
-                                            cnt_id] + 1
+                                                                cnt_id] + 1
                                 # Esteve 24.07.2016 - end
 
                     elif node.getAttribute('android:exported') != 'false':
@@ -519,31 +525,34 @@ def manifest_analysis(mfxml, man_data_dic, src_type, app_dir):
                                         if prot_level_exist:
                                             if protlevel == 'normal':
                                                 ret_list.append(
-                                                    ('a_prot_normal', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                    ('a_prot_normal', (itemname, item, perm + prot),
+                                                     (an_or_a, itemname)))
                                                 if itemname in ['Activity', 'Activity-Alias']:
                                                     exported.append(item)
                                                 exp_count[cnt_id] = exp_count[
-                                                    cnt_id] + 1
+                                                                        cnt_id] + 1
                                             elif protlevel == 'dangerous':
                                                 ret_list.append(
-                                                    ('a_prot_danger', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                    ('a_prot_danger', (itemname, item, perm + prot),
+                                                     (an_or_a, itemname)))
                                                 if itemname in ['Activity', 'Activity-Alias']:
                                                     exported.append(item)
                                                 exp_count[cnt_id] = exp_count[
-                                                    cnt_id] + 1
+                                                                        cnt_id] + 1
                                             elif protlevel == 'signature':
                                                 ret_list.append(
                                                     ('a_prot_sign', (itemname, item, perm + prot), (an_or_a, itemname)))
                                             elif protlevel == 'signatureOrSystem':
                                                 ret_list.append(
-                                                    ('a_prot_sign_sys', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                    ('a_prot_sign_sys', (itemname, item, perm + prot),
+                                                     (an_or_a, itemname)))
                                     else:
                                         ret_list.append(
                                             ('a_prot_unknown', (itemname, item, perm), (an_or_a, itemname)))
                                         if itemname in ['Activity', 'Activity-Alias']:
                                             exported.append(item)
                                         exp_count[cnt_id] = exp_count[
-                                            cnt_id] + 1
+                                                                cnt_id] + 1
                                     # Esteve 24.07.2016 - end
                                 else:
                                     # Esteve 24.07.2016 - begin - At this point, we are dealing with components that do not have a permission neither at the component level nor at the
@@ -555,7 +564,7 @@ def manifest_analysis(mfxml, man_data_dic, src_type, app_dir):
                                         if itemname in ['Activity', 'Activity-Alias']:
                                             exported.append(item)
                                         exp_count[cnt_id] = exp_count[
-                                            cnt_id] + 1
+                                                                cnt_id] + 1
                                     # Esteve 24.07.2016 - end
                                     # Esteve 24.07.2016 - begin - At this point, we are dealing with components that have a permission at the application level, but not at the component
                                     # level. Two options are possible:
@@ -575,31 +584,35 @@ def manifest_analysis(mfxml, man_data_dic, src_type, app_dir):
                                         if prot_level_exist:
                                             if protlevel == 'normal':
                                                 ret_list.append(
-                                                    ('a_prot_normal_appl', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                    ('a_prot_normal_appl', (itemname, item, perm + prot),
+                                                     (an_or_a, itemname)))
                                                 if itemname in ['Activity', 'Activity-Alias']:
                                                     exported.append(item)
                                                 exp_count[cnt_id] = exp_count[
-                                                    cnt_id] + 1
+                                                                        cnt_id] + 1
                                             elif protlevel == 'dangerous':
                                                 ret_list.append(
-                                                    ('a_prot_danger_appl', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                    ('a_prot_danger_appl', (itemname, item, perm + prot),
+                                                     (an_or_a, itemname)))
                                                 if itemname in ['Activity', 'Activity-Alias']:
                                                     exported.append(item)
                                                 exp_count[cnt_id] = exp_count[
-                                                    cnt_id] + 1
+                                                                        cnt_id] + 1
                                             elif protlevel == 'signature':
                                                 ret_list.append(
-                                                    ('a_prot_sign_appl', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                    ('a_prot_sign_appl', (itemname, item, perm + prot),
+                                                     (an_or_a, itemname)))
                                             elif protlevel == 'signatureOrSystem':
                                                 ret_list.append(
-                                                    ('a_prot_sign_sys_appl', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                    ('a_prot_sign_sys_appl', (itemname, item, perm + prot),
+                                                     (an_or_a, itemname)))
                                         else:
                                             ret_list.append(
                                                 ('a_prot_unknown_appl', (itemname, item, perm), (an_or_a, itemname)))
                                             if itemname in ['Activity', 'Activity-Alias']:
                                                 exported.append(item)
                                             exp_count[cnt_id] = exp_count[
-                                                cnt_id] + 1
+                                                                    cnt_id] + 1
                                     # Esteve 24.07.2016 - end
                                     # Esteve 29.07.2016 - begin The component is not explicitly exported (android:exported is not 'true'). It is not implicitly exported either (it does not
                                     # make use of an intent filter). Despite that, it could still be exported by default, if it is a content provider and the android:targetSdkVersion
@@ -608,8 +621,10 @@ def manifest_analysis(mfxml, man_data_dic, src_type, app_dir):
                                     # app will not be run on a system where the
                                     # system's API level is below 17.
                         else:
-                            if man_data_dic['min_sdk'] and man_data_dic['target_sdk'] and int(man_data_dic['min_sdk']) < ANDROID_4_2_LEVEL:
-                                if itemname == 'Content Provider' and int(man_data_dic['target_sdk']) < ANDROID_4_2_LEVEL:
+                            if man_data_dic['min_sdk'] and man_data_dic['target_sdk'] and int(
+                                    man_data_dic['min_sdk']) < ANDROID_4_2_LEVEL:
+                                if itemname == 'Content Provider' and int(
+                                        man_data_dic['target_sdk']) < ANDROID_4_2_LEVEL:
                                     perm = ''
                                     item = node.getAttribute('android:name')
                                     if node.getAttribute('android:permission'):
@@ -628,31 +643,34 @@ def manifest_analysis(mfxml, man_data_dic, src_type, app_dir):
                                         if prot_level_exist:
                                             if protlevel == 'normal':
                                                 ret_list.append(
-                                                    ('c_prot_normal', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                    ('c_prot_normal', (itemname, item, perm + prot),
+                                                     (an_or_a, itemname)))
                                                 exp_count[cnt_id] = exp_count[
-                                                    cnt_id] + 1
+                                                                        cnt_id] + 1
                                             elif protlevel == 'dangerous':
                                                 ret_list.append(
-                                                    ('c_prot_danger', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                    ('c_prot_danger', (itemname, item, perm + prot),
+                                                     (an_or_a, itemname)))
                                                 exp_count[cnt_id] = exp_count[
-                                                    cnt_id] + 1
+                                                                        cnt_id] + 1
                                             elif protlevel == 'signature':
                                                 ret_list.append(
                                                     ('c_prot_sign', (itemname, item, perm + prot), (an_or_a, itemname)))
                                             elif protlevel == 'signatureOrSystem':
                                                 ret_list.append(
-                                                    ('c_prot_sign_sys', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                    ('c_prot_sign_sys', (itemname, item, perm + prot),
+                                                     (an_or_a, itemname)))
                                         else:
                                             ret_list.append(
                                                 ('c_prot_unknown', (itemname, item, perm), (an_or_a, itemname)))
                                             exp_count[cnt_id] = exp_count[
-                                                cnt_id] + 1
+                                                                    cnt_id] + 1
                                     else:
                                         if perm_appl_level_exists is False:
                                             ret_list.append(
                                                 ('c_not_protected', (itemname, item), (an_or_a, itemname)))
                                             exp_count[cnt_id] = exp_count[
-                                                cnt_id] + 1
+                                                                    cnt_id] + 1
                                         else:
                                             perm = '<strong>Permission: </strong>' + perm_appl_level
                                             prot = ''
@@ -665,25 +683,30 @@ def manifest_analysis(mfxml, man_data_dic, src_type, app_dir):
                                             if prot_level_exist:
                                                 if protlevel == 'normal':
                                                     ret_list.append(
-                                                        ('c_prot_normal_appl', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                        ('c_prot_normal_appl', (itemname, item, perm + prot),
+                                                         (an_or_a, itemname)))
                                                     exp_count[cnt_id] = exp_count[
-                                                        cnt_id] + 1
+                                                                            cnt_id] + 1
                                                 elif protlevel == 'dangerous':
                                                     ret_list.append(
-                                                        ('c_prot_danger_appl', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                        ('c_prot_danger_appl', (itemname, item, perm + prot),
+                                                         (an_or_a, itemname)))
                                                     exp_count[cnt_id] = exp_count[
-                                                        cnt_id] + 1
+                                                                            cnt_id] + 1
                                                 elif protlevel == 'signature':
                                                     ret_list.append(
-                                                        ('c_prot_sign_appl', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                        ('c_prot_sign_appl', (itemname, item, perm + prot),
+                                                         (an_or_a, itemname)))
                                                 elif protlevel == 'signatureOrSystem':
                                                     ret_list.append(
-                                                        ('c_prot_sign_sys_appl', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                        ('c_prot_sign_sys_appl', (itemname, item, perm + prot),
+                                                         (an_or_a, itemname)))
                                             else:
                                                 ret_list.append(
-                                                    ('c_prot_unknown_appl', (itemname, item, perm), (an_or_a, itemname)))
+                                                    (
+                                                    'c_prot_unknown_appl', (itemname, item, perm), (an_or_a, itemname)))
                                                 exp_count[cnt_id] = exp_count[
-                                                    cnt_id] + 1
+                                                                        cnt_id] + 1
                                     # Esteve 29.07.2016 - end
                                     # Esteve 08.08.2016 - begin - If the content provider does not target an API version lower than 17, it could still be exported by default, depending
                                     # on the API version of the platform. If it was below 17, the content
@@ -709,31 +732,34 @@ def manifest_analysis(mfxml, man_data_dic, src_type, app_dir):
                                             if prot_level_exist:
                                                 if protlevel == 'normal':
                                                     ret_list.append(
-                                                        ('c_prot_normal_new', (itemname, item, perm + prot), (itemname)))
+                                                        (
+                                                        'c_prot_normal_new', (itemname, item, perm + prot), (itemname)))
                                                     exp_count[cnt_id] = exp_count[
-                                                        cnt_id] + 1
+                                                                            cnt_id] + 1
                                                 if protlevel == 'dangerous':
                                                     ret_list.append(
-                                                        ('c_prot_danger_new', (itemname, item, perm + prot), (itemname)))
+                                                        (
+                                                        'c_prot_danger_new', (itemname, item, perm + prot), (itemname)))
                                                     exp_count[cnt_id] = exp_count[
-                                                        cnt_id] + 1
+                                                                            cnt_id] + 1
                                                 if protlevel == 'signature':
                                                     ret_list.append(
                                                         ('c_prot_sign_new', (itemname, item, perm + prot), (itemname)))
                                                 if protlevel == 'signatureOrSystem':
                                                     ret_list.append(
-                                                        ('c_prot_sign_sys_new', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                        ('c_prot_sign_sys_new', (itemname, item, perm + prot),
+                                                         (an_or_a, itemname)))
                                             else:
                                                 ret_list.append(
                                                     ('c_prot_unknown_new', (itemname, item, perm), (itemname)))
                                                 exp_count[cnt_id] = exp_count[
-                                                    cnt_id] + 1
+                                                                        cnt_id] + 1
                                         else:
                                             if perm_appl_level_exists is False:
                                                 ret_list.append(
                                                     ('c_not_protected2', (itemname, item), (an_or_a, itemname)))
                                                 exp_count[cnt_id] = exp_count[
-                                                    cnt_id] + 1
+                                                                        cnt_id] + 1
                                             else:
                                                 perm = '<strong>Permission: </strong>' + perm_appl_level
                                                 prot = ''
@@ -746,27 +772,31 @@ def manifest_analysis(mfxml, man_data_dic, src_type, app_dir):
                                                 if prot_level_exist:
                                                     if protlevel == 'normal':
                                                         ret_list.append(
-                                                            ('c_prot_normal_new_appl', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                            ('c_prot_normal_new_appl', (itemname, item, perm + prot),
+                                                             (an_or_a, itemname)))
                                                         exp_count[cnt_id] = exp_count[
-                                                            cnt_id] + 1
+                                                                                cnt_id] + 1
                                                     elif protlevel == 'dangerous':
                                                         ret_list.append(
-                                                            ('c_prot_danger_new_appl', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                            ('c_prot_danger_new_appl', (itemname, item, perm + prot),
+                                                             (an_or_a, itemname)))
                                                         exp_count[cnt_id] = exp_count[
-                                                            cnt_id] + 1
+                                                                                cnt_id] + 1
                                                     elif protlevel == 'signature':
                                                         ret_list.append(
-                                                            ('c_prot_sign_new_appl', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                            ('c_prot_sign_new_appl', (itemname, item, perm + prot),
+                                                             (an_or_a, itemname)))
                                                     elif protlevel == 'signatureOrSystem':
                                                         ret_list.append(
-                                                            ('c_prot_sign_sys_new_appl', (itemname, item, perm + prot), (an_or_a, itemname)))
+                                                            ('c_prot_sign_sys_new_appl', (itemname, item, perm + prot),
+                                                             (an_or_a, itemname)))
                                                 else:
                                                     ret_list.append(
-                                                        ('c_prot_unknown_new_appl', (itemname, item, perm), (an_or_a, itemname)))
+                                                        ('c_prot_unknown_new_appl', (itemname, item, perm),
+                                                         (an_or_a, itemname)))
                                                     exp_count[cnt_id] = exp_count[
-                                                        cnt_id] + 1
+                                                                            cnt_id] + 1
                                     # Esteve 08.08.2016 - end
-
         # GRANT-URI-PERMISSIONS
         for granturi in granturipermissions:
             if granturi.getAttribute('android:pathPrefix') == '/':
@@ -794,11 +824,45 @@ def manifest_analysis(mfxml, man_data_dic, src_type, app_dir):
                         ('a_high_intent_priority', (value,), ()))
         # ACTIONS
         for action in actions:
+            name = action.getAttribute('android:name')
+            if "com.kumulos.push" in name:
+                ret_list.append(
+                    ('push_platform', ("kumulos",), ()))
+            if "IBMPushNotification" in name:
+                ret_list.append(
+                    ('push_platform', ("IBM",), ()))
+            if ("cn.jiguang" in name) or ("cn.jpush" in name):
+                ret_list.append(
+                    ('push_platform', ("Jiguang",), ()))
             if action.getAttribute('android:priority').isdigit():
                 value = action.getAttribute('android:priority')
                 if int(value) > 100:
                     ret_list.append(
                         ('a_high_action_priority', (value,), ()))
+
+        # META-DATA
+        for metadata in metadatas:
+            if "com.urbanairship" in metadata.getAttribute('android:name'):
+                ret_list.append(
+                    ('push_platform', ("airship",), ()))
+            if 'com.pushwoosh' in metadata.getAttribute('android:name'):
+                ret_list.append(
+                    ('push_platform', ("pushwoosh",), ()))
+
+        # SERVICES
+        for service in services:
+            if "com.kumulos.android" in service.getAttribute('android:name'):
+                ret_list.append(
+                    ('push_platform', ("kumulos",), ()))
+            if "com.igexin" in service.getAttribute('android:name'):
+                ret_list.append(
+                    ('push_platform', ("iGexin",), ()))
+        # USES-SDK
+        for usesdk in usesdks:
+            if "com.leanplum" in usesdk.getAttribute('tools:overrideLibrary'):
+                ret_list.append(
+                    ('push_platform', ("leanplum",), ()))
+
         for a_key, t_name, t_desc in ret_list:
             a_template = android_manifest_desc.MANIFEST_DESC.get(a_key)
             if a_template:

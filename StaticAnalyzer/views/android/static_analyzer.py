@@ -86,6 +86,8 @@ def static_analyzer(request, api=False):
             app_dic['tools_dir'] = app_dic['dir'] / 'StaticAnalyzer' / 'tools'
             app_dic['tools_dir'] = app_dic['tools_dir'].as_posix()
             logger.info('Starting Analysis on : %s', app_dic['app_name'])
+
+            # 如果上传的是一个xapk文件，先把他解析成apk格式的文件，然后按照apk的逻辑来处理
             if typ == 'xapk':
                 # Handle XAPK
                 # Base APK will have the MD5 of XAPK
@@ -93,23 +95,32 @@ def static_analyzer(request, api=False):
                 if not res:
                     raise Exception('Invalid XAPK File')
                 typ = 'apk'
+
+            # 如果上传的是一个apk文件
             if typ == 'apk':
                 app_dic['app_file'] = app_dic['md5'] + '.apk'  # NEW FILENAME
                 app_dic['app_path'] = (
                     app_dic['app_dir'] / app_dic['app_file']).as_posix()
                 app_dic['app_dir'] = app_dic['app_dir'].as_posix() + '/'
+
                 # Check if in DB
                 # pylint: disable=E1101
                 db_entry = StaticAnalyzerAndroid.objects.filter(
                     MD5=app_dic['md5'])
+
+                # 如果在db中并且禁用了rescan就跳过分析
                 if db_entry.exists() and rescan == '0':
                     context = get_context_from_db_entry(db_entry)
+
+                # 否则就开始分析过程
                 else:
                     # ANALYSIS BEGINS
                     app_dic['size'] = str(
                         file_size(app_dic['app_path'])) + 'MB'  # FILE SIZE
                     app_dic['sha1'], app_dic[
                         'sha256'] = hash_gen(app_dic['app_path'])
+
+                    # 解压APK包
                     app_dic['files'] = unzip(
                         app_dic['app_path'], app_dic['app_dir'])
                     logger.info('APK Extracted')
@@ -126,9 +137,10 @@ def static_analyzer(request, api=False):
                                 request,
                                 msg,
                                 False)
+                    # 获取the hardcoded certificate keystore
                     app_dic['certz'] = get_hardcoded_cert_keystore(app_dic[
                                                                    'files'])
-                    # Manifest XML
+                    # Parse Manifest XML
                     mani_file, mani_xml = get_manifest(
                         app_dic['app_path'],
                         app_dic['app_dir'],
@@ -154,8 +166,7 @@ def static_analyzer(request, api=False):
                     # default paths
                     app_dic['icon_found'] = False
                     app_dic['icon_path'] = ''
-                    # TODO: Check for possible different names for resource
-                    # folder?
+                    # TODO: Check for possible different names for resource folder?
                     if os.path.exists(res_path):
                         icon_dic = get_icon(
                             app_dic['app_path'], res_path)
@@ -171,37 +182,51 @@ def static_analyzer(request, api=False):
                     man_data_dic = manifest_data(app_dic['parsed_xml'])
                     app_dic['playstore'] = get_app_details(
                         man_data_dic['packagename'])
+
+                    # 进行manifest分析
                     man_an_dic = manifest_analysis(
                         app_dic['parsed_xml'],
                         man_data_dic,
                         '',
                         app_dic['app_dir'],
                     )
-                    elf_dict = elf_analysis(app_dic['app_dir'])
-                    cert_dic = cert_info(
-                        app_dic['app_dir'],
-                        app_dic['app_file'])
-                    apkid_results = apkid_analysis(app_dic[
-                        'app_dir'], app_dic['app_path'], app_dic['app_name'])
-                    tracker = Trackers.Trackers(
-                        app_dic['app_dir'], app_dic['tools_dir'])
-                    tracker_res = tracker.get_trackers()
 
+                    # 对.so文件进行分析
+                    elf_dict = {'elf_analysis':"Skipped"}
+                    # elf_dict = elf_analysis(app_dic['app_dir'])
+                    cert_dic = {}
+                    # cert_dic = cert_info(
+                    #     app_dic['app_dir'],
+                    #     app_dic['app_file'])
+
+                    # 进行APKID Analysis of DEX files
+                    apkid_results = []
+                    # apkid_results = apkid_analysis(app_dic[
+                    #     'app_dir'], app_dic['app_path'], app_dic['app_name'])
+                    # tracker = Trackers.Trackers(
+                    #     app_dic['app_dir'], app_dic['tools_dir'])
+                    # tracker_res = tracker.get_trackers()
+                    tracker_res = []
+
+                    # 用jadx工具将apk反汇编成java
                     apk_2_java(app_dic['app_path'], app_dic['app_dir'],
                                app_dic['tools_dir'])
 
+                    # 用baksmali工具将dex反汇编成smali
                     dex_2_smali(app_dic['app_dir'], app_dic['tools_dir'])
 
+                    #
                     code_an_dic = code_analysis(
                         app_dic['app_dir'],
                         'apk',
                         app_dic['manifest_file'])
 
                     # Get the strings from android resource and shared objects
-                    string_res = strings_from_apk(
-                        app_dic['app_file'],
-                        app_dic['app_dir'],
-                        elf_dict['elf_strings'])
+                    string_res = []
+                    # string_res = strings_from_apk(
+                    #     app_dic['app_file'],
+                    #     app_dic['app_dir'],
+                    #     elf_dict['elf_strings'])
                     if string_res:
                         app_dic['strings'] = string_res['strings']
                         app_dic['secrets'] = string_res['secrets']
@@ -212,14 +237,19 @@ def static_analyzer(request, api=False):
                     else:
                         app_dic['strings'] = []
                         app_dic['secrets'] = []
+
                     # Firebase DB Check
-                    code_an_dic['firebase'] = firebase_analysis(
-                        list(set(code_an_dic['urls_list'])))
+                    code_an_dic['firebase'] = []
+                    # code_an_dic['firebase'] = firebase_analysis(
+                    #     list(set(code_an_dic['urls_list'])))
+
                     # Domain Extraction and Malware Check
                     logger.info(
                         'Performing Malware Check on extracted Domains')
-                    code_an_dic['domains'] = MalwareDomainCheck().scan(
-                        list(set(code_an_dic['urls_list'])))
+                    code_an_dic['domains'] = {}
+                    # code_an_dic['domains'] = MalwareDomainCheck().scan(
+                    #     list(set(code_an_dic['urls_list'])))
+
                     # Copy App icon
                     copy_icon(app_dic['md5'], app_dic['icon_path'])
                     app_dic['zipped'] = 'apk'
@@ -278,10 +308,15 @@ def static_analyzer(request, api=False):
                         app_dic['app_path'],
                         app_dic['md5'])
                 template = 'static_analysis/android_binary_analysis.html'
+                # Delete Upload Dir Contents
+                if is_dir_exists(app_dic['app_dir']):
+                    shutil.rmtree(app_dic['app_dir'])
                 if api:
                     return context
                 else:
                     return render(request, template, context)
+
+            # 如果上传的是一个zip文件
             elif typ == 'zip':
                 ios_ret = HttpResponseRedirect(
                     '/static_analyzer_ios/?name='
@@ -406,13 +441,15 @@ def static_analyzer(request, api=False):
                             pro_type,
                             app_dic['manifest_file'])
                         # Firebase DB Check
-                        code_an_dic['firebase'] = firebase_analysis(
-                            list(set(code_an_dic['urls_list'])))
+                        code_an_dic['firebase'] = []
+                        # code_an_dic['firebase'] = firebase_analysis(
+                        #     list(set(code_an_dic['urls_list'])))
                         # Domain Extraction and Malware Check
                         logger.info(
                             'Performing Malware Check on extracted Domains')
-                        code_an_dic['domains'] = MalwareDomainCheck().scan(
-                            list(set(code_an_dic['urls_list'])))
+                        code_an_dic['domains'] = []
+                        # code_an_dic['domains'] = MalwareDomainCheck().scan(
+                        #     list(set(code_an_dic['urls_list'])))
                         logger.info('Connecting to Database')
                         try:
                             # SAVE TO DB
@@ -477,6 +514,8 @@ def static_analyzer(request, api=False):
                     return context
                 else:
                     return render(request, template, context)
+
+            # 如果上传的不是XAPK、APK、zip文件
             else:
                 err = ('Only APK,IPA and Zipped '
                        'Android/iOS Source code supported now!')

@@ -1,3 +1,67 @@
+- id: airship_sdk
+  description: Embedded with airship SDK
+  type: Regex
+  pattern: airship
+  input_case: lower
+  severity: info
+- id: kumulos_sdk
+  description: Embedded with kumulos SDK
+  type: Regex
+  pattern: kumulos
+  input_case: lower
+  severity: info
+- id: pusher_sdk
+  description: Embedded with pusher SDK
+  type: Regex
+  pattern: com\.pusher\.pushnotifications
+  input_case: lower
+  severity: info
+- id: onesignal_sdk
+  description: Embedded with onesignal SDK
+  type: Regex
+  pattern: onesignal
+  input_case: lower
+  severity: info
+- id: taplytics_sdk
+  description: Embedded with taplytics SDK
+  type: Regex
+  pattern: com\.taplytics\.sdk
+  input_case: lower
+  severity: info
+- id: leanplum_sdk
+  description: Embedded with leanplum SDK
+  type: Regex
+  pattern: com\.leanplum
+  input_case: lower
+  severity: info
+- id: IBM_sdk
+  description: Embedded with IBM SDK
+  type: RegexOr
+  pattern:
+    - MFPPush
+    - BMSClient
+  input_case: lower
+  severity: info
+- id: pushbot_sdk
+  description: Embedded with pushbot SDK
+  type: Regex
+  pattern: pushbot
+  input_case: lower
+  severity: info
+- id: Jiguang_sdk
+  description: Embedded with Jiguang SDK
+  type: RegexOr
+  pattern:
+    - cn\.jiguang
+    - cn\.jpush
+  input_case: lower
+  severity: info
+- id: iGexin_sdk
+  description: Embedded with iGexin SDK
+  type: Regex
+  pattern: com\.igexin\.sdk\.PushService
+  input_case: exact
+  severity: info
 - id: api_native_code
   description: Loading Native Code (Shared Library)
   type: Regex

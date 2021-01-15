@@ -16,6 +16,12 @@ MANIFEST_DESC = {
         'name': ('Clear text traffic is Enabled For App '
                  '[android:usesCleartextTraffic=true]'),
     },
+    'push_platform': {
+        'title': '%s',
+        'level': 'high',
+        'description': 'Notification Platform',
+        'name': 'This app uses a notification platform',
+    },
     'a_boot_aware': {
         'title': 'App is direct-boot aware <br>[android:directBootAware=true]',
         'level': 'info',
